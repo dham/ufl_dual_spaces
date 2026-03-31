@@ -6,6 +6,7 @@
 \usepackage[finalizecache=true,cachedir=.]{minted}
 %\usepackage[frozencache=true,cachedir=.]{minted}
 \usepackage{amsmath}
+\usepackage{tikz-uml}
 
 \newtheorem{theorem}{Theorem}[section]
 \newtheorem{definition}{Definition}[section]
@@ -56,7 +57,7 @@ That is to say, if $V$ is a function space and $f\in V$ then $f$ associates a va
     a:W_{m-1} \times W_{m-2} \times \ldots \times W_{0} \times V_{k-1} \times V_{k-2} \times \ldots \times V_{0} \rightarrow K\\
     a(w_{m-1}, w_{m-2}, \ldots, w_0; v_{k-1}, v_{k-2}, \ldots, v_0) \in K
     \end{gather} 
-    for suitable vector spaces $V_0\ldots V_{k-1}$, $W_0\ldots W_{m-1}$. The form must be linear in the arguments $v_i, i>=1$ but may be nonlinear in the parameters $w_i$. The form must be conjugate linear in the first argument $w_0$. Of course if $K=\mathbb{R}$ then this is simply linear.
+    for suitable vector spaces $V_0\ldots V_{k-1}$, $W_0\ldots W_{m-1}$. The form must be linear in the arguments $v_i, i>=1$ but may be nonlinear in the parameters $w_i$. The form must be conjugate linear in the first argument $v_0$. Of course if $K=\mathbb{R}$ then this is simply linear.
 \end{definition}
 
 \begin{note}
@@ -69,16 +70,16 @@ Although UFL supports multilinear forms of any arity, the needs of the finite el
     If $V$ is a vector space then $V^*$, the (anti-)dual space to $V$, is the space of bounded conjugate linear functionals $V\rightarrow K$.
 \end{definition}
 
-In order to minimise notational clutter, throughout the rest of this paper we will simply refer to the terminology for the real case, except where it is relevant to highlight the complex case. Further, we will not include parameters to forms except when those parameters explicitly feature in the argument.
+In order to minimise notational clutter, throughout the rest of this paper we will simply refer to the terminology for the real case, except where it is relevant to highlight the complex case. Further, we will not include parameters to forms except when those parameters explicitly feature in the mathematical exposition.
 
 \begin{theorem}[Dual basis]
 If $\{\phi_i\}$ is a basis for a finite vector space $V$ then there exists $\{\phi_i^*\}$ a basis for $V^*$ such that:
 \begin{equation} 
     \phi_i^*(\phi_j) = \delta_{ij}
 \end{equation} 
-The basis $\{\phi_i^*\}$ is termed the \emph{dual basis}.
+The basis $\{\phi_i^*\}$ is termed the \emph{dual basis}\footnote{Usual practice, following \parencite{Ciarlet2002} and as originally automated in \parencite{kirby2004} is to define the dual basis at element level and derive the local and global primal bases from that, which is equivalent to this definition.}.
 \end{theorem}
-Where it is necessary to make the distinction, we will refer to the space to which a dual space is dual as the \emph{primal space} and its basis as the \emph{primal basis}. 
+Where it is necessary to make the distinction, we will refer to the space to which a dual space is dual as the \emph{primal space} and its basis as the \emph{primal basis}.
 \begin{definition}{Reflexive vector space}
     A reflexive vector space is one for which $(V^{*})^{*}$ is isomorphic to $V$ under the canonical map. That is, we can identify $(V^*)^*$ and $V$.
 \end{definition}
@@ -117,7 +118,7 @@ A direct consequence of this is the following equivalence:
 \begin{equation} 
     V_1 \times V_0 \rightarrow K = V_1 \rightarrow V_0^*
 \end{equation}
-This says that every form can equivalently be thought of as an operator mapping into the dual space of its first argument.
+This says that every form can equivalently be thought of as an operator mapping into the dual space of its first argument, and vice versa.
 
 \section{UFL Forms}
 
@@ -132,20 +133,20 @@ is a symbolic expression for the integral of \mintinline{python}|c| over the dom
 \mint{python}|f_1 = conj(a) * dx|
 represents the integration of the unknown function \mintinline{python}|a| over the domain. It's therefore a linear form, or a function in $V\rightarrow K$.
 
-In order to make the argument order clear, we introduce a second function space, \mintinline{python}|W|. We  define \mintinline{python}|b = ufl.Argument(W, 1)|\footnote{Equivalently, \mintinline{python}|b = ufl.TrialFunction(W)|.} and create the simplest bilinear form:
-\mint{python}|f_2 = inner(c, b) * dx|
+In order to make the argument order clear, we introduce a second function space, \mintinline{python}|W|. We  define \mintinline{python}|b = ufl.Argument(W, 1)|\footnote{Equivalently, \mintinline{python}|b = ufl.TrialFunction(W)|.} and create the simplest bilinear form (or 2-form):
+\mint{python}|f_2 = inner(a, b) * dx|
 This is a function in $W\times V\rightarrow K$. The inner product is Hermitian, so we could equivalently have written:
-\mint{python}|f_2 = conj(inner(b, c)) * dx|
+\mint{python}|f_2 = conj(inner(b, a)) * dx|
 The argument order is determined by the declared argument numbers, not by where the arguments appear in the expression defining the form.
 
-\subsection{Expressions}
+\subsection{Expressions}\label{sec:expressions}
 
-The integrands of the forms given above are instances of \mintinline{python}|UFL.expression|. UFL expressions are functions $\Omega\rightarrow K^n$ for some $n>0$. They are composed of terminal expressions combined by mathematical operators. In addition to coefficients and arguments, the terminals can be the spatial coordinate ($x\in\Omega$) or mesh-related geometric quantites such as facet normals and cell volumes. For details see \textcite{alnaes2014} section 3.2. For the purposes of this paper the relevant factor is that UFL expressions are primal quantities drawn from a function space more general than finite element spaces. Symbolically, UFL treats expressions as capable of evaluation at any point in the domain and Gateaux differentiable with respect to any coefficient. The treatment of undefined evaluations of expressions, for example at discontinuities, is left to the problem solving environment.
+The integrands of the forms given above are instances of \mintinline{python}|UFL.expression|. UFL expressions are functions $\Omega\rightarrow K^n$ for some $n>0$. They are composed of terminal expressions combined by mathematical operators. In addition to coefficients and arguments, the terminals can be the spatial coordinate ($x\in\Omega$) or mesh-related geometric quantites such as facet normals and cell volumes. For details see \textcite{alnaes2014} section 3.2. For the purposes of this paper the relevant factor is that UFL expressions are primal quantities drawn from a function space more general than finite element spaces. Symbolically, UFL treats expressions as capable of evaluation at any point in the domain and Gateaux differentiable with respect to any coefficient. The treatment of undefined evaluations of expressions, for example at discontinuities, is left to the problem solving environment. That said, UFL does provide restriction notation (\mintinline{python}|"+"| and \mintinline{python}|"-"|) that indicates the side of a cell facet interior to the domain on which a quantity is to be evaluated.
 
 \subsection{Assembly}
 
-The problem solving environment takes symbolic UFL forms and evaluates them. In Firedrake and FEniCS, the operation which does this is called assembly. The problem solving environment encodes in its subclass of
-\mintinline{python}|ufl.FunctionSpace| a basis for the function space. We will write ${\phi_i}$ for the basis for $V$ and ${\psi_i}$ for the basis for $W$. The problem solving environment will also implement its own subclass of \mintinline{python}|ufl.Coefficient|, in Firedrake and FEniCS this is called a \mintinline{python}|Function|. If \mintinline{python}|c| is a \mintinline{python}|Coefficient|, then mathematically:
+The problem solving environment takes symbolic UFL forms and evaluates them. In Firedrake and FEniCS, the operation which does this is called \emph{assembly}. The problem solving environment encodes in its subclass of
+\mintinline{python}|ufl.FunctionSpace| a basis for the function space. We will write $\{\phi_i\}$ for the basis for $V$. The problem solving environment will also implement its own subclass of \mintinline{python}|ufl.Coefficient|, in Firedrake and FEniCS this is called a \mintinline{python}|Function|. If \mintinline{python}|c| is a \mintinline{python}|Coefficient|, then mathematically:
 \begin{equation}
     c = c_i\phi_i
 \end{equation}
@@ -238,21 +239,9 @@ It is also useful for users to interrogate objects to determine if they are prim
 
 The original motivation for these extensions was to be able to represent a concrete member of a dual space, for example the cofunction $h$ in \eqref{eq:cofunction}. UFL now represents these values of objects of type \mintinline{python}|ufl.Cofunction|, defined with respect to a \mintinline{python}|ufl.DualSpace| in the same way that a \mintinline{python}|ufl.Coefficient| is defined with respect to a \mintinline{python}|ufl.FunctionSpace|. The problem solving environment's subclass of this (for example \mintinline{python}|firedrake.Cofunction|) will augment this with a vector of numerical coefficients just as is the case for its subclass of \mintinline{python}|ufl.Coefficient|. Similarly in order to be able to create operators that act on cofunctions, UFL also now has a \mintinline{python}|ufl.Coargument| class, representing an unknown cofunction.
 
-\subsection{Cofunctions are forms, not expressions}
+\subsection{Bilinear forms}
 
-Cofunctions, and coarguments, differ from coefficients and arguments in that they do not represent functions from the domain to $K^m$, but rather represent functionals from $V$ to $R$ where $V$ is the function space in whose dual they lie. This means that neither \mintinline{python}|ufl.Cofunction| nor \mintinline{python}|ufl.Coargument| is a subclass of \mintinline{python}|ufl.Expression|. This is the reason that it's necessary to have separate \mintinline{python}|ufl.Cofunction| nor \mintinline{python}|ufl.Coargument| classes rather than simply allowing \mintinline{python}|ufl.Coefficient| and \mintinline{python}|ufl.Argument| to be defined on a \mintinline{python}|ufl.DualSpace|.
-
-Conversely, a \mintinline{python}|ufl.Cofunction| is an (anti-)linear form. This has a number of consequences. In particular, it means that the if \mintinline{python}|V| is a function space then the following code is perfectly well mathematically defined:
-\begin{minted}{python}
-    f = ufl.Cofunction(V.dual())
-    v = ufl.Argument(V, 0)
-    g = ufl.conj(v) * dx + f
-\end{minted}
-However for this to work, it is necessary to extend the UFL concept of a multilinear form to encompass cofunctions, and to represent the operations on them.
-
-\subsection{2-forms}
-
-What do we get from:
+What value does \mintinline{python}|A| take in the following Firedrake code?
 \begin{minted}{python}
     A = assemble(f_2)
 \end{minted}
@@ -260,77 +249,153 @@ Mathematically this is defined as follows:
 \begin{equation}
     A_{ij} = \int \phi_i \psi_j\ \mathrm{d}x
 \end{equation}
-That is to say, $A$ is a matrix. Recall that $\{\phi_i\}$ is the basis for $V$, which is the function space of argument 0 in this case, and $\{\psi_j\}$ is the basis for $W$, which is argument 1. This means that the assembled operator has its arguments in ascending order, while the form notation has them in descending order. This is a frequent cause of confusion about which we will have to remain aware. FEniCS and Firedrake both agree that assembling a 2-form produces a matrix, though UFL does not have a corresponding class, so currently matrices are outside its scope. However, a matrix is an assembled 2-form in just the same way that a cofunction is an assembled 1-form, so the logical conclusion would be the creation of a \mintinline{python}|ufl.Matrix| class which would behave as an assembled 2-form, and would have algebraic properties analogous to a cofunction. A matrix would presumably have two intrinsic arguments.
+That is to say, $A$ is a matrix. Recall that $\{\phi_i\}$ is the basis for $V$, which is the function space of argument 0 in this case, and $\{\psi_j\}$ is the basis for $W$, which is argument 1. However, a matrix is an assembled 2-form in just the same way that a cofunction is an assembled 1-form, so the code above now results in \mintinline{python}|ufl.Matrix| class which would behave as an assembled 2-form, and which has algebraic properties analogous to those of \mintinline{python}|ufl.Cofunction| though with two arguments.
+
+\subsection{Generalising UFL forms}
+
+Cofunctions, and coarguments, differ from coefficients and arguments in that they do not represent functions from the domain to $K^m$, but rather represent functionals from some finite element space $V$ to $\mathbb{R}$. This means that neither \mintinline{python}|ufl.Cofunction| nor \mintinline{python}|ufl.Coargument| can be a subclass of \mintinline{python}|ufl.Expression|. 
+Consequently, \mintinline{python}|ufl.Cofunction| and \mintinline{python}|ufl.Coargument| are classes rather than simply allowing \mintinline{python}|ufl.Coefficient| and \mintinline{python}|ufl.Argument| to be defined on a \mintinline{python}|ufl.DualSpace|.
+
+Conversely, a \mintinline{python}|ufl.Cofunction| is an (anti-)linear form. This has a number of consequences. In particular, it means that the if \mintinline{python}|V| is a function space then the following code is perfectly well mathematically defined:
+\begin{minted}{python}
+    f = ufl.Cofunction(V.dual())
+    v = ufl.Argument(V, 0)
+    g = ufl.conj(v) * dx
+    h = g + f
+\end{minted}
+The implementation of this functionality is achieved by extending the UFL concept of a multilinear form to encompass cofunctions, and to represent the operations on them. In order to preserve backwards compatibility, the class \mintinline{python}|ufl.Form| continues to describe multilinear forms expressed symbolically as integrals, and a new parent class, \mintinline{python}|ufl.BaseForm|. Subclasses of \mintinline{python}|ufl.BaseForm| enable the representation of operations on both symbolic and assembled forms. Table \ref{tab:dual_types} lists the key subclasses. \mintinline{python}|ufl.Action| and \mintinline{python}|ufl.Adjoint| have not previously been mentioned. UFL has existing \mintinline{python}|action| and \mintinline{python}|adjoint| functions, but these applied eagerly to the strictly symbolic \mintinline{python}|ufl.Form| objects, and their action on (primal) coefficients. In contrast, the expanded language creates more complex and computationally intensive applications of these operations, necessitating their symbolic representation and delaying their evaluation to the optimal stage of the calculation.  
+
+\begin{table}[htbp]
+    \centering
+    \begin{tabular}{ll}
+        Class & Role \\\hline
+        \mintinline{python}|ufl.Form| & Symbolic multilinear form.\\
+        \mintinline{python}|ufl.Cofunction| & Assembled linear form.\\
+        \mintinline{python}|ufl.Coargument| & An unknown linear form in a given dual space.\\
+        \mintinline{python}|ufl.Matrix| & An Assembled bilinear form.\\
+        \mintinline{python}|ufl.Action| & The action of one form on another.\\
+        \mintinline{python}|ufl.Adjoint| & The action of one form on another.
+    \end{tabular}
+    \caption{Key subclasses of \mintinline{python}|ufl.BaseForm|.}
+    \label{tab:baseform_subclasses}
+\end{table}
+
+
+
+% \begin{figure}
+%     \centering
+%     \begin{tikzpicture}
+%         \umlsimpleclass{BaseForm}
+%         \umlsimpleclass[x=-10, y=-2]{Form}
+%         \umlsimpleclass[x=-7, y=-2]{Cofunction}
+%         \umlsimpleclass[x=-4, y=-2]{Coargument}
+%         \umlsimpleclass[x=-2, y=-2]{FormSum}
+%         \umlsimpleclass[x=0, y=-2]{Action}
+%         \umlsimpleclass[x=2, y=-2]{Adjoint}
+%         \umlsimpleclass[x=2, y=-2]{BaseForm}        
+%         \umlinherit[geometry=|-|]{Form}{BaseForm}
+%         \umlinherit[geometry=|-|]{Cofunction}{BaseForm}
+%         \umlinherit[geometry=|-|]{Coargument}{BaseForm}        
+%     \end{tikzpicture}
+%     \caption{Caption}
+%     \label{fig:enter-label}
+% \end{figure}
+
 
 
 \section{The interpolation operator}
 
-Usually we are concerned with vector spaces which are finite-dimensional subspaces of larger, typically infinite dimensional, spaces. In the finite element method, we often define the basis of these finite spaces by defining the space and choosing the dual basis. The primal basis can then be derived by solving a linear system (see, for example, \href{https://finite-element.github.io/2_finite_elements.html}{the finite element course}). Let's briefly examine the dual basis functions, also known as nodes. These are functionals that take in a function and (linearly) produce a scalar. What do such objects look like? The simplest case is probably the point evaluation functional, or Dirac delta distribution. For a function $v: \Omega\rightarrow\mathbb{R}$, the point evaluation functional at the point $x$ is given by:
+Interpolating a known expression into a finite element space is a common operation. It occurs when specifying analytical initial or boundary conditions, or forcing functions; in the prolongation operator of geometric multigrid and, as demonstrated in \parencite{nixon-hill_2024}, when extracting solution data at specified points.
+
+Interpolation relies on the fact that the basis function defining the dual space are typically restrictions of functionals defined over a broader class of functions. For example, scalar Lagrange elements are usually defined with respect to a dual basis comprising the evaluation of the primal basis at particular points. This dual basis is well-defined for any function which can be evaluated at those points. Henceforth when we refer to the domain of the dual basis, we will mean the full range of functions for which the dual functionals are defined, and not simply the functions in the primal space.
+
+\begin{definition}{Interpolation}
+    If $V: \Omega \rightarrow K^\alpha$ is a finite element space with dual basis $\{\phi^*_i\}_{i=0}^{N}$ and $f:\Omega \rightarrow K^\alpha$ is a function in the domain of that dual basis, then the interpolant of $f$ in $V$, $\mathcal{I}_V$ is given by the function $v\in V$ such that:
+    \begin{equation}
+         \phi^*_i(v) = \phi^*_i(f) \quad 0<=i<N
+    \end{equation}
+    If we write $v=v_i\phi_i$ it follows immediately that $v_i = \phi^*_i(f)$.
+\end{definition}
+
+This operator is represented in UFL by the \mintinline{python}|interpolate| function, which returns an object of type \mintinline{python}|ufl.Interpolate|. This function takes two formal parameters, the first is a UFL expression (a primal quantity) and the second is a dual quantity (either a \mintinline{python}|ufl.Cofunction| or a \mintinline{python}|ufl.Coargument|). In the simplest case, let \mintinline{python}|e| be a ufl expression not containing any ufl arguments, and \mintinline{python}|V| be a finite element space. Then:
+\begin{minted}{python}
+    vstar = ufl.Argument(V.dual(), 0)  # equivalently ufl.Testfunction(V.dual())
+    I = interpolate(e, vstar)
+\end{minted}
+yields the operator which interpolates \mintinline{python}|e| into \mintinline{python}|V|. Using Firedrake's subclasses of ufl objects, \mintinline{python}|assemble(V)| would yield a \mintinline{python}|firedrake.Function| (\mintinline{python}|ufl.Coefficient|) in \mintinline{python}|V|.
+
+The symbolic \mintinline{python}|interpolate| operator composes with UFL's concept of form arguments to provide a full range of primal and dual adjoint operations and operators. Let \mintinline{python}|W| be a second finite element space and define:
+\begin{minted}{python}
+    u = ufl.Argument(W, 1)  # equivalently ufl.TrialFunction(W)  
+\end{minted}
+Further define \mintinline{python}|ehat(u)|, a ufl expression containing \mintinline{python}|u|. Note that a valid ufl expression is linear in its arguments. Then:
+\begin{minted}{python}
+    J = ufl.interpolate(ehat(u), vstar)
+\end{minted}
+represents the interpolation operator $J: W\rightarrow V$. If we denote the basis of \mintinline{python}|W| as $\{\psi_j\}$ then assembling \mintinline{python}|J| will produce the matrix:
 \begin{equation}
-    \delta_x(v) = v(x)
+    \tilde{J}_{ij} = \phi^*_i\left(\hat{e}(\psi_j)\right)
 \end{equation}
-Other common functionals include the integral of a function over one mesh cell, or the component of a vector value in a particular direction at a particular point. All of these have in common that they are trivially extensible to a much larger space of functions than the finite element function space whose dual they define. For example, point evaluation functionals can be evaluated for any space of functions whose members are well-defined at the points in question. This is useful because it is a very common requirement to approximate some function from a more general space in a finite element function. This most commonly occurs when a forcing function or reference solution is known either from external (physical) data, or from an analytic expression. Suppose $v\in V$ and that $\{\phi_i\}$ is a basis for $V$, with $\{\phi_i^*\}$ the corresponding dual basis. The for a function $f:\Omega\rightarrow\mathbb{R}$ such that the dual functionals are defined, the interpolation of $f$ into $v$ is given by:
+Conversely, if we define:
+\begin{minted}{python}
+    fstar = ufl.Cofunction(V)
+    v = ufl.TestFunction(W)
+\end{minted}
+then:
+\begin{minted}{python}
+    g = assemble(interpolate(ehat(v), fstar))
+\end{minted}
+produces a \mintinline{python}|ufl.Cofunction| in \mintinline{python}|W.dual()| with coefficients given by:
 \begin{equation}
-    \hat{f} = \hat{f}_i \phi_i 
+    g_i = f^*_j\phi^*_j(\hat{e}(\psi_i)
 \end{equation}
-where:
-\begin{equation}
-    \hat{f}_i = \phi_i^*(f)
-\end{equation}
-In other words, the $i$-th basis coefficient is the evaluation of the $i$-th dual basis functional on the function to be interpolated. We can call this operator $I_V(f)$.
-\begin{note}
-    If $f\in V$ then it is straightforward to show that $I_V(f)=f$. That is to say, interpolation is a projection.
-\end{note}
-In fact, the interpolation operator is nothing other than the evaluation of the dual basis. We could instead define an operator, a generalisation of the delta distribution, which takes a functional $v\in V^*$ and applies it to a function $u\in U$ where $U$ is a function space on which the functionals in $V^*$ are defined. That is to say:
-\begin{equation}
-    \delta(u, v) = v(u)
-\end{equation}
-Notice that $\delta: U\times V^*\rightarrow \mathbb{R}$. Since $V^*$ is itself a vector space, this makes $\delta$ a 2-form, albeit a slightly unusual one. We would be more used to forms in $U\times V\rightarrow\mathbb{R}$.
+That is to say, the dual interpolation operation is represented by passing argument zero in the first operand of \mintinline{python}|interpolate|.
 
+The range of operations supported by \mintinline{python}|ufl.interpolate| is shown in table \ref{tab:interpolate}. Support for the dual as well as the primal interpolation operations allows for multigrid restriction operations to be directly expressed, as well as the automated adjoint capabilities of Firedrake \parencite{mitusch2019} to extend to interpolation \parencite{nixon-hill_2024}.
 
+FIXME: sort out the conjugates here.
 
-\section{The delta operator and dual space arguments}
+\begin{table}[htbp]
+    \centering
+    \begin{tabular}{lll}
+        UFL & mathematical definition & type signature \\\hline
+         \mintinline{python}|interpolate(e, vstar)|&  $\phi^*_i(e)$ & $V$\\
+         \mintinline{python}|interpolate(ehat(u), vstar)|&  $\phi^*_i(\hat{e}(\psi_j))$ & $W\rightarrow V$\\
+        \mintinline{python}|interpolate(ehat(u), fstar)|&  $f^*_j\phi^*_j(\hat{e}(\psi_i))$ & $W^*$\\
+        \mintinline{python}|interpolate(ehat(v), ustar)|&  $\phi^*_j(\hat{e}(\psi_i))$ & $W^*\rightarrow V^*$\\
+        \mintinline{python}|interpolate(e, fstar)|&  $f^*_i\phi^*_i(e)$ & $\mathbb{R}$\\        
+    \end{tabular}
+    \caption{\mintinline{python}|ufl.interpolate| can represent any primal or dual interpolation operation or operator between finite element spaces. This is achieved by using different combinations and numberings of arguments in the first and second operand slots of \mintinline{python}|ufl.interpolate|. Symbols used in this table are defined in table \ref{tab:interp_symbols}.}
+    \label{tab:interpolate}
+\end{table}
 
-Let's now return to the interpolation operator. If we wish to incorporate it into UFL as a first class citizen then we need to take our extensions of the language just a little further. Let's suppose we can define arguments in dual spaces. These are mathematical objects of a different kind to the arguments we have already met: they are unknown members of $V^*$ rather than $V$. We suppose, therefore, that they are of a new type: \mintinline{python}|ufl.Coargument|. In order to minimise syntactic clutter, one might imagine overloading the object constructor such that \mintinline{python}|ufl.Argument(V.dual, 0)| is valid and returns a \mintinline{python}|ufl.Coargument|.
+\begin{table}[htbp]
+    \centering
+    \begin{tabular}{ll}
+    Symbol  & Meaning \\\hline
+    \mintinline{python}|V| & Finite element function space with basis $\{\phi_i\}$ \\
+    \mintinline{python}|W| & Finite element function space with basis $\{\psi_i\}$ \\
+    \mintinline{python}|e| & A \mintinline{python}|ufl.Expression| with no argument.\\
+    \mintinline{python}|ehat(v)| & A \mintinline{python}|ufl.Expression| with a single argument.\\ 
+    \mintinline{python}|v = ufl.TestFunction(W)| & Argument 0 in $W$.\\
+    \mintinline{python}|u = ufl.TrialFuncton(W)| & Argument 1 in $W$.\\
+    \mintinline{python}|vstar = ufl.TestFunction(V.dual())| & Argument 0 in $V^*$.\\
+    \mintinline{python}|ustar = ufl.TrialFunction(V.dual())| & Argument 1 in $V^*$.\\
+    \mintinline{python}|fstar = ufl.Coargument(V.dual())| & A cofunction in $V^*$.
+    \end{tabular}
+    \caption{Code symbols used in table \ref{tab:interpolate} their mathematical interpretation.}
+    \label{tab:interp_symbols}
+\end{table}
 
-This enables us to define a new form \mintinline{python}|ufl.Delta| such that if \mintinline{python}|e| is a UFL expression and \mintinline{python}|v_ = ufl.Argument(V.dual, 0)| then \mintinline{python}|delta(e, v_)| is a symbolic expression for the interpolation of \mintinline{python}|e| into $V$. If we assume that \mintinline{python}|e| does not contain any arguments and execute:
-\begin{minted}{python}
-    f = assemble(Delta(e, v_))
-\end{minted}
-Then \mintinline{python}|f| will be a \mintinline{python}|Function| in $V$ representing the result of this interpolation. Conversely, if \mintinline{python}|u = Argument (W, 1)| then:
-\begin{minted}{python}
-    A = assemble(Delta(u, v_))
-\end{minted}
-results in a matrix which is the interpolation operator from $W$ into $V$. One can also construct the adjoint of this operator by reversing the argument positions:
-\begin{minted}{python}
-    v = ufl.Argument(W, 0)
-    u_ = ufl.Argument(V.dual, 1)
-    AT = assemble(ufl.Delta(v, u_))
-\end{minted}
-As a particular case of interest, if we write:
-\begin{minted}{python}
-    u = ufl.Argument(V, 1)
-    v_ = ufl.Argument(V.dual, 0)
-    I = assemble(ufl.Delta(u, v_))
-\end{minted}
-Then \mintinline{python}|I| is the identity matrix for $V$
+\section{Form operators}
 
-For completeness, we can also address the other cases. If we write:
-\begin{minted}{python}
-    f = firedrake.Cofunction(V.dual)
-    c = firedrake.Function(W)
-    t = ufl.Delta(c, f)
-    s = assemble(t)
-\end{minted}
-then $t$ is a symbolic expression for $f(c)$ and $s$ is the scalar which results from evaluating it. Indeed, one might want to implement the \mintinline{python}|__call__| special method on \mintinline{python}|ufl.Cofunction| and \mintinline{python}|ufl.Coargument| so that the syntax \mintinline{python}|f(c)| works directly. Note that this would simply return \mintinline{python}|ufl.Delta(c, f)|. \mintinline{python}|ufl.Delta| is still needed as the object which encodes the symbolic operation of dual evaluation.
+As noted above, \mintinline{python}|ufl.interpolate| returns a symbolic interpolation object of type \mintinline{python}|ufl.Interpolate|. This object might be then assembled to yield a function, cofunction, matrix or scalar depending on the number and ordering of any arguments in its operands. As we shall see later, the  \mintinline{python}|ufl.Interpolate| might also be subjected to further symbolic manipulation.
 
-Finally, if we write:
-\begin{minted}{python}
-    f = firedrake.Cofunction(V.dual)
-    u = ufl.Argument(W, 0)
-    g = assemble(ufl.Delta(u, f))
-\end{minted} 
-Then $g\in W^*$ is the interpolation of $f$ into $W^*$. (Note that Cofunction interpolation is the transpose of function interpolation).
+Where should \mintinline{python}|ufl.Interpolate| fit in the UFL type system? On the one hand, it is an object which can be numerically assembled, and which for at least some of the cases in table \ref{tab:interpolate} is form-valued. Conversely, in other cases its output lies in a primal space and it would be mathematically valid for it to be nested in a \mintinline{python}|ufl.Expression|.
+
+The solution adopted is to introduce a new class, \mintinline{python}|ufl.FormOperator| which inherits from both \mintinline{python}|ufl.BaseForm| and \mintinline{python}|ufl.Expression|. This has the advantage that all mathematically valid operations on \mintinline{python}|ufl.Interpolate| result in well-formed UFL, though at the price of being somewhat too permissive. Mathematically invalid expressions such as the sum of a primal and a dual interpolation are be caught during symbolic UFL processing. This choice trades a simpler user-facing class structure (particularly for the external operator introduced in FIXME.
+
+Since \mintinline{python}|ufl.FormOperator| is a \mintinline{python}|ufl.BaseForm|, the arguments of objects of this type must be represented as the arguments of a form.
 
 \section{Adjoint}
 
