@@ -3,7 +3,7 @@
 \usepackage{mathpazo}
 \usepackage[margin=2.5cm]{geometry}
 \usepackage{hyperref}
-\usepackage[finalizecache=true,cachedir=.]{minted}
+\usepackage[cachedir=.]{minted}
 %\usepackage[frozencache=true,cachedir=.]{minted}
 \usepackage{amsmath}
 \usepackage{tikz-uml}
@@ -219,7 +219,7 @@ Here we present a fully mathematically consistent answer to the question of what
         \mintinline{python}|ufl.Coefficient| & \mintinline{python}|ufl.Cofunction| \\
         \mintinline{python}|ufl.Argument| & \mintinline{python}|ufl.Coargument| \\
     \end{tabular}
-    \caption{Dual types corresponding to primal finite element spaces, and to known and unknown functions in those spaces. The more consistent name \mintinline{python}|ufl.Cocoefficient| was rejected as confusing and risible.}
+    \caption{Dual types corresponding to primal finite element spaces, and to known and unknown functions in those spaces. The more consistent name \mintinline{python}{ufl.Cocoefficient} was rejected as confusing and risible.}
     \label{tab:dual_types}
 \end{table}
 
@@ -276,7 +276,7 @@ The implementation of this functionality is achieved by extending the UFL concep
         \mintinline{python}|ufl.Action| & The action of one form on another.\\
         \mintinline{python}|ufl.Adjoint| & The action of one form on another.
     \end{tabular}
-    \caption{Key subclasses of \mintinline{python}|ufl.BaseForm|.}
+    \caption{Key subclasses of \mintinline{python}{ufl.BaseForm}.}
     \label{tab:baseform_subclasses}
 \end{table}
 
@@ -305,12 +305,27 @@ The implementation of this functionality is achieved by extending the UFL concep
 
 \section{The interpolation operator}
 
-Interpolating a known expression into a finite element space is a common operation. It occurs when specifying analytical initial or boundary conditions, or forcing functions; in the prolongation operator of geometric multigrid and, as demonstrated in \parencite{nixon-hill_2024}, when extracting solution data at specified points.
+Interpolating a known expression into a finite element space is a common
+operation. It occurs when specifying analytical initial or boundary conditions,
+or forcing functions; in the prolongation operator of geometric multigrid and,
+as demonstrated in \parencite{nixon-hill_2024}, when extracting solution data
+at specified points.
 
-Interpolation relies on the fact that the basis function defining the dual space are typically restrictions of functionals defined over a broader class of functions. For example, scalar Lagrange elements are usually defined with respect to a dual basis comprising the evaluation of the primal basis at particular points. This dual basis is well-defined for any function which can be evaluated at those points. Henceforth when we refer to the domain of the dual basis, we will mean the full range of functions for which the dual functionals are defined, and not simply the functions in the primal space.
+Interpolation relies on the fact that the basis function defining the dual
+space are typically restrictions of functionals defined over a broader class of
+functions. For example, scalar Lagrange elements are usually defined with
+respect to a dual basis comprising the evaluation of the primal basis at
+particular points. This dual basis is well-defined for any function which can
+be evaluated at those points. Henceforth when we refer to the domain of the
+dual basis, we will mean the full range of functions for which the dual
+functionals are defined, and not merely their restriction to functions in the
+primal space.
 
 \begin{definition}{Interpolation}
-    If $V: \Omega \rightarrow K^\alpha$ is a finite element space with dual basis $\{\phi^*_i\}_{i=0}^{N}$ and $f:\Omega \rightarrow K^\alpha$ is a function in the domain of that dual basis, then the interpolant of $f$ in $V$, $\mathcal{I}_V$ is given by the function $v\in V$ such that:
+    If $V: \Omega \rightarrow K^\alpha$ is a finite element space with dual
+    basis $\{\phi^*_i\}_{i=0}^{N}$ and $f:\Omega \rightarrow K^\alpha$ is a
+    function in the domain of that dual basis, then the interpolant of $f$ in
+    $V$, $\mathcal{I}_V$ is given by the function $v\in V$ such that:
     \begin{equation}
          \phi^*_i(v) = \phi^*_i(f) \quad 0<=i<N
     \end{equation}
@@ -383,23 +398,53 @@ FIXME: sort out the conjugates here.
     \mintinline{python}|ustar = ufl.TrialFunction(V.dual())| & Argument 1 in $V^*$.\\
     \mintinline{python}|fstar = ufl.Coargument(V.dual())| & A cofunction in $V^*$.
     \end{tabular}
-    \caption{Code symbols used in table \ref{tab:interpolate} their mathematical interpretation.}
+    \caption{Code symbols used in table \ref{tab:interpolate} and their
+    mathematical interpretation.}
     \label{tab:interp_symbols}
 \end{table}
 
 \section{Form operators}
 
-As noted above, \mintinline{python}|ufl.interpolate| returns a symbolic interpolation object of type \mintinline{python}|ufl.Interpolate|. This object might be then assembled to yield a function, cofunction, matrix or scalar depending on the number and ordering of any arguments in its operands. As we shall see later, the  \mintinline{python}|ufl.Interpolate| might also be subjected to further symbolic manipulation.
+As noted above, \mintinline{python}|ufl.interpolate| returns a symbolic
+interpolation object of type \mintinline{python}|ufl.Interpolate|. This object
+might be then assembled to yield a function, cofunction, matrix or scalar
+depending on the number and ordering of any arguments in its operands. As we
+shall see later, the  \mintinline{python}|ufl.Interpolate| might also be
+subjected to further symbolic manipulation.
 
-Where should \mintinline{python}|ufl.Interpolate| fit in the UFL type system? On the one hand, it is an object which can be numerically assembled, and which for at least some of the cases in table \ref{tab:interpolate} is form-valued. Conversely, in other cases its output lies in a primal space and it would be mathematically valid for it to be nested in a \mintinline{python}|ufl.Expression|.
+Where should \mintinline{python}|ufl.Interpolate| fit in the UFL type system?
+On the one hand, it is an object which can be numerically assembled, and which
+for at least some of the cases in table \ref{tab:interpolate} is form-valued.
+Conversely, in other cases its output lies in a primal space and it would be
+mathematically valid for it to be nested in a
+\mintinline{python}|ufl.Expression|.
 
-The solution adopted is to introduce a new class, \mintinline{python}|ufl.FormOperator| which inherits from both \mintinline{python}|ufl.BaseForm| and \mintinline{python}|ufl.Expression|. This has the advantage that all mathematically valid operations on \mintinline{python}|ufl.Interpolate| result in well-formed UFL, though at the price of being somewhat too permissive. Mathematically invalid expressions such as the sum of a primal and a dual interpolation are be caught during symbolic UFL processing. This choice trades a simpler user-facing class structure (particularly for the external operator introduced in FIXME.
+The solution adopted is to introduce a new class,
+\mintinline{python}|ufl.FormOperator| which inherits from both
+\mintinline{python}|ufl.BaseForm| and \mintinline{python}|ufl.Expression|. This
+has the advantage that all mathematically valid operations on
+\mintinline{python}|ufl.Interpolate| result in well-formed UFL, though at the
+price of being somewhat too permissive. Mathematically invalid expressions such
+as the sum of a primal and a dual interpolation are be caught during symbolic
+UFL processing. This choice trades a simpler user-facing class structure
+(particularly for the external operator introduced in FIXME) for a decrease in
+type safety.
 
-Since \mintinline{python}|ufl.FormOperator| is a \mintinline{python}|ufl.BaseForm|, the arguments of objects of this type must be represented as the arguments of a form.
+Since \mintinline{python}|ufl.FormOperator| is a
+\mintinline{python}|ufl.BaseForm|, the arguments of objects of this type must
+be represented as the arguments of a form. This is achieved for form operators
+by appealing to the natural isomorphism between reflexive function spaces and
+their double duals. In other words, the fact that:
+\begin{equation}
+    W\cong W** (= W*\rightarrow\mathbb{R})
+\end{equation}
+Using this, 
 
 \section{Adjoint}
 
-The  dual or adjoint of a 2-form is the conjugate of that form with its arguments relabelled in reversed order. This carries over to forms which map from or to dual spaces. If we take the example of the delta form again, then:
+The  dual or adjoint of a 2-form is the conjugate of that form with its
+arguments relabelled in reversed order. This carries over to forms which map
+from or to dual spaces. If we take the example of the delta form again, then:
 \begin{equation}
     \delta: V \times W^* \rightarrow \mathbb{R}.
 \end{equation}
