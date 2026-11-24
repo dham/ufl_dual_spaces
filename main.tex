@@ -124,7 +124,14 @@ This says that every form can equivalently be thought of as an operator mapping 
 
 UFL is the Unified Form Language \parencite{alnaes2014}. As one might expect, it provides support for multilinear forms. UFL is a symbolic algebra language embedded in the Python programming language. In common with other symbolic languages, it provides for symbols to stand for unknown values, including the arguments to multilinear forms. UFL is a purely symbolic language which problem solving environments such as Firedrake and FEniCS extend by subclassing in order to attach numerical data and actually solve problems. In understanding how UFL objects do (or should) behave, it is sometimes necessary to consider how they would be integrated into the problem solving environment, and especially what should happen when a form is assembled.
 
-In an attempt to avoid replicating \textcite{alnaes2014} and the documentation of UFL\footnote{\url{https://docs.fenicsproject.org/ufl/main/}}, we will start here from UFL's function space and gloss over the cells, meshes, and finite elements from which these are constructed. A \mintinline{python}|ufl.FunctionSpace| is a symbolic object representing a (primal) finite element space. The scalar field over which UFL operates is selected by the problem solving environment. In this section we will assume real-valued forms in order to minimise notational clutter.
+In an attempt to avoid replicating \textcite{alnaes2014} and the documentation
+of UFL\footnote{\url{https://docs.fenicsproject.org/ufl/main/}}, we will start
+here from UFL's function space and gloss over the cells, meshes, and finite
+elements from which these are constructed. A
+\mintinline{python}|ufl.FunctionSpace| is a symbolic object representing a
+(primal) finite element space. The scalar field over which UFL operates is
+selected by the problem solving environment. In this section we will assume
+real-valued forms in order to minimise notational clutter.
 
 If \mintinline{python}|V| is a \mintinline{python}|ufl.FunctionSpace| then \mintinline{python}|c = ufl.Coefficient(V)| defines a \emph{known} function in \mintinline{python}|V|. Conversely, \mintinline{python}|a = ufl.Argument(V, 0)|\footnote{Users more frequently write \mintinline{python}|a = ufl.TestFunction(V)|, but that is simply syntactic sugar. A test function is just argument 0 to a form.} defines a placeholder symbol for an \emph{unknown} function in \mintinline{python}|V|.
 Consequently, 
